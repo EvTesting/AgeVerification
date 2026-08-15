@@ -1,0 +1,28 @@
+{
+  "shows": [
+    {
+      "id": 1,
+      "title": "Cartoon Adventures",
+      "rating": "Under 13",
+      "description": "Fun and colorful animated journeys for young audiences."
+    },
+    {
+      "id": 2,
+      "title": "High School Mysteries",
+      "rating": "13-17",
+      "description": "A group of teenagers solve supernatural mysteries."
+    },
+    {
+      "id": 3,
+      "title": "Late Night Thrillers",
+      "rating": "18+",
+      "description": "Intense suspense and complex plotlines for mature viewers."
+    },
+    {
+      "id": 4,
+      "title": "Nature Documentary",
+      "rating": "All Ages",
+      "description": "Explore wildlife around the world."
+    }
+  ]
+}
