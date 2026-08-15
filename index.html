@@ -1,1 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Age Verification</title>
 
+  <!-- Firebase App & Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-color: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 450px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    /* Scalable circular camera preview for mobile screens */
+    .camera-box {
+      position: relative;
+      width: 70vw;
+      height: 70vw;
+      max-width: 280px;
+      max-height: 280px;
+      margin: 20px auto;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 4px solid var(--accent-color);
+      background-color: #000;
+    }
+
+    video, canvas, #previewImg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .guide-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 15px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .btn {
+      background-color: var(--accent-color);
+      color: #000;
+      border: none;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      touch-action: manipulation;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+      color: #fff;
+    }
+
+    .status-msg {
+      margin-top: 15px;
+      font-size: 0.95rem;
+      color: #94a3b8;
+    }
+
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .show-card {
+      background: #334155;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .show-card h4 {
+      margin: 0 0 6px 0;
+      color: var(--accent-color);
+      font-size: 1rem;
+    }
+
+    .show-card p {
+      font-size: 0.8rem;
+      margin: 0;
+      color: #cbd5e1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Verification UI -->
+  <div id="verificationSection" class="container">
+    <h2>Age Verification</h2>
+    <p style="font-size: 0.9rem; color: #cbd5e1;">Center your face inside the circle and take a photo.</p>
+
+    <div class="camera-box">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="previewImg" class="hidden" alt="Captured photo preview">
+      <div class="guide-overlay"></div>
+    </div>
+
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <div class="controls">
+      <button id="snapBtn" class="btn">Take Photo</button>
+      <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
+      <button id="submitBtn" class="btn hidden">Submit for Review</button>
+    </div>
+
+    <div id="status" class="status-msg">Starting camera...</div>
+  </div>
+
+  <!-- Shows Catalog UI -->
+  <div id="contentSection" class="container hidden">
+    <h2>Your Shows Catalog</h2>
+    <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold;"></p>
+    <div id="showsCatalog" class="catalog"></div>
+  </div>
+
+  <script>
+    // 1. Paste your Firebase project credentials here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const previewImg = document.getElementById('previewImg');
+    const snapBtn = document.getElementById('snapBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusDiv = document.getElementById('status');
+    const verificationSection = document.getElementById('verificationSection');
+    const contentSection = document.getElementById('contentSection');
+
+    let currentImageData = null;
+    let userId = localStorage.getItem('user_device_id') || 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('user_device_id', userId);
+
+    // Initialize Front Camera (optimized for mobile)
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 400 }, height: { ideal: 400 } }
+        });
+        video.srcObject = stream;
+        statusDiv.textContent = "Position your face and tap 'Take Photo'.";
+      } catch (err) {
+        statusDiv.textContent = "Camera access denied or unavailable.";
+      }
+    }
+
+    snapBtn.addEventListener('click', () => {
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, 300, 300);
+
+      currentImageData = canvas.toDataURL('image/jpeg', 0.6); // Compress photo for fast transfer
+      previewImg.src = currentImageData;
+
+      video.classList.add('hidden');
+      previewImg.classList.remove('hidden');
+
+      snapBtn.classList.add('hidden');
+      retakeBtn.classList.remove('hidden');
+      submitBtn.classList.remove('hidden');
+      statusDiv.textContent = "Review your photo before submitting.";
+    });
+
+    retakeBtn.addEventListener('click', () => {
+      previewImg.classList.add('hidden');
+      video.classList.remove('hidden');
+
+      snapBtn.classList.remove('hidden');
+      retakeBtn.classList.add('hidden');
+      submitBtn.classList.add('hidden');
+      statusDiv.textContent = "Position your face and tap 'Take Photo'.";
+    });
+
+    // Send photo across devices using Firebase
+    submitBtn.addEventListener('click', () => {
+      submitBtn.classList.add('hidden');
+      retakeBtn.classList.add('hidden');
+      statusDiv.textContent = "Sending to admin on another device...";
+
+      db.ref('submissions/' + userId).set({
+        id: userId,
+        photo: currentImageData,
+        timestamp: new Date().toLocaleTimeString(),
+        status: 'pending'
+      }).then(() => {
+        statusDiv.textContent = "Submitted! Waiting for admin review...";
+        listenForApproval();
+      }).catch(err => {
+        statusDiv.textContent = "Error submitting photo. Check internet connection.";
+      });
+    });
+
+    // Listen in real-time for admin approval from any device
+    function listenForApproval() {
+      db.ref('approvals/' + userId).on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.ageGroup) {
+          loadShowsCatalog(data.ageGroup);
+        }
+      });
+    }
+
+    async function loadShowsCatalog(ageGroup) {
+      verificationSection.classList.add('hidden');
+      contentSection.classList.remove('hidden');
+      document.getElementById('assignedGroupBanner').textContent = `Assigned Rating: ${ageGroup}`;
+
+      try {
+        const response = await fetch('shows.json');
+        const data = await response.json();
+        const catalogContainer = document.getElementById('showsCatalog');
+        catalogContainer.innerHTML = '';
+
+        const filteredShows = data.shows.filter(show => show.rating === ageGroup || show.rating === 'All Ages');
+
+        if (filteredShows.length === 0) {
+          catalogContainer.innerHTML = '<p>No shows available for this category.</p>';
+          return;
+        }
+
+        filteredShows.forEach(show => {
+          const card = document.createElement('div');
+          card.className = 'show-card';
+          card.innerHTML = `
+            <h4>${show.title}</h4>
+            <p><strong>Rating:</strong> ${show.rating}</p>
+            <p>${show.description}</p>
+          `;
+          catalogContainer.appendChild(card);
+        });
+      } catch (e) {
+        console.error('Failed to load shows.json', e);
+      }
+    }
+
+    // Check if already approved on app startup
+    window.addEventListener('load', () => {
+      db.ref('approvals/' + userId).once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.ageGroup) {
+          loadShowsCatalog(data.ageGroup);
+        } else {
+          initCamera();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
