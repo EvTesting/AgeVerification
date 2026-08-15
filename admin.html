@@ -87,6 +87,7 @@
     .btn-kids { background-color: #22c55e; }
     .btn-normal { background-color: #38bdf8; color: #000; }
     .btn-adult { background-color: #ef4444; }
+    .btn-reset { background-color: #64748b; margin-top: 8px; }
 
     .empty-msg {
       color: #94a3b8;
@@ -104,17 +105,16 @@
   </div>
 
   <div id="requestsList" class="requests-list">
-    <p class="empty-msg">Waiting for automatic submissions from users...</p>
+    <p class="empty-msg">Waiting for incoming submissions...</p>
   </div>
 
   <script>
-    // Fixed Peer ID for automatic recognition
     const ADMIN_PEER_ID = 'auto-admin-hub-2026';
     const peer = new Peer(ADMIN_PEER_ID);
     const activeConnections = {};
 
     peer.on('open', () => {
-      document.getElementById('status').textContent = "Online - Ready to receive submissions";
+      document.getElementById('status').textContent = "Online - Ready to process submissions";
     });
 
     peer.on('connection', (conn) => {
@@ -131,25 +131,39 @@
       const emptyMsg = container.querySelector('.empty-msg');
       if (emptyMsg) emptyMsg.remove();
 
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.id = `card-${userId}`;
+      let card = document.getElementById(`card-${userId}`);
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${userId}`;
+        container.appendChild(card);
+      }
+
       card.innerHTML = `
         <img src="${photo}" alt="User Submission">
         <p><strong>User ID:</strong> ${userId}</p>
         <div class="btn-group">
-          <button class="btn btn-kids" onclick="approve('${userId}', 'Kids Mode (Under 13)')">Kids Mode (Under 13)</button>
-          <button class="btn btn-normal" onclick="approve('${userId}', 'Normal Mode (13-17)')">Normal Mode (13-17)</button>
-          <button class="btn btn-adult" onclick="approve('${userId}', 'Adult Mode (18+)')">Adult Mode (18+)</button>
+          <button class="btn btn-kids" onclick="approve('${userId}', 'Preschool')">Assign: Kids Mode (Preschool)</button>
+          <button class="btn btn-normal" onclick="approve('${userId}', '13-17')">Assign: Normal Mode (13-17)</button>
+          <button class="btn btn-adult" onclick="approve('${userId}', '18+')">Assign: Adult Mode (18+)</button>
+          <button class="btn btn-reset" onclick="resetUser('${userId}')">Reset Verification</button>
         </div>
       `;
-      container.appendChild(card);
     }
 
     function approve(userId, ageGroup) {
       const conn = activeConnections[userId];
       if (conn) {
         conn.send({ type: 'approval', ageGroup: ageGroup });
+      }
+      const card = document.getElementById(`card-${userId}`);
+      if (card) card.remove();
+    }
+
+    function resetUser(userId) {
+      const conn = activeConnections[userId];
+      if (conn) {
+        conn.send({ type: 'reset' });
       }
       const card = document.getElementById(`card-${userId}`);
       if (card) card.remove();
