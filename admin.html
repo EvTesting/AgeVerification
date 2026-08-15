@@ -101,8 +101,9 @@
       appId: "1:501354082724:web:32147ae1df6cd373d29131"
     };
 
+    // Initialize Firebase Realtime Database
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.database(firebaseConfig.databaseURL);
 
     const requestsList = document.getElementById('requestsList');
 
