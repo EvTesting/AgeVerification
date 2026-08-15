@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>StreamHub - Home</title>
+  <title>StreamHub</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
   <style>
@@ -30,14 +30,13 @@
       min-height: 100vh;
     }
 
-    /* Top Navigation / Header */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       max-width: 900px;
       margin: 0 auto 20px auto;
-      padding: 10px 0;
+      padding-bottom: 12px;
       border-bottom: 1px solid #334155;
     }
 
@@ -47,10 +46,19 @@
       color: var(--accent-color);
     }
 
-    .user-profile {
+    /* Profile Container & Dropdown Options */
+    .profile-container {
+      position: relative;
+    }
+
+    .profile-button {
       display: flex;
       align-items: center;
       gap: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-color);
     }
 
     .profile-avatar {
@@ -85,23 +93,125 @@
       color: #fff;
     }
 
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: 50px;
+      background-color: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 200px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .dropdown-item {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .dropdown-item:hover {
+      background-color: #334155;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background-color: #334155;
+    }
+
+    /* Catalog Displays */
     .main-container {
       max-width: 900px;
       margin: 0 auto;
     }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    .section-title {
+      font-size: 1.25rem;
+      margin-bottom: 12px;
     }
 
-    /* Verification Box Styles */
-    .verification-box {
+    .shows-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .show-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #334155;
+    }
+
+    .show-card img {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      background-color: #0f172a;
+    }
+
+    .show-details {
+      padding: 12px;
+    }
+
+    .show-details h4 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .rating-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      background: var(--accent-color);
+      color: #000;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .show-details p {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      line-height: 1.3;
+    }
+
+    /* Modal Verification Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       text-align: center;
-      border: 2px dashed var(--accent-color);
+      position: relative;
+      border: 1px solid #334155;
     }
 
     .camera-box {
@@ -137,15 +247,13 @@
       background-color: var(--accent-color);
       color: #000;
       border: none;
-      padding: 12px 20px;
+      padding: 12px;
       font-size: 1rem;
       font-weight: bold;
       border-radius: 10px;
       cursor: pointer;
       width: 100%;
-      max-width: 300px;
-      margin: 6px auto;
-      display: block;
+      margin-top: 8px;
     }
 
     .btn-secondary {
@@ -159,7 +267,6 @@
       color: #cbd5e1;
     }
 
-    /* Spinning Loading Wheel */
     .spinner {
       width: 40px;
       height: 40px;
@@ -167,67 +274,12 @@
       border-top: 4px solid var(--accent-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 15px auto;
+      margin: 20px auto;
     }
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-
-    /* Shows Grid */
-    .section-title {
-      font-size: 1.25rem;
-      margin-bottom: 12px;
-      color: var(--text-color);
-    }
-
-    .shows-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .show-card {
-      background: #334155;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .show-card img {
-      width: 100%;
-      height: 130px;
-      object-fit: cover;
-      background-color: #1e293b;
-    }
-
-    .show-details {
-      padding: 12px;
-    }
-
-    .show-details h4 {
-      font-size: 1rem;
-      margin-bottom: 4px;
-      color: #fff;
-    }
-
-    .rating-tag {
-      display: inline-block;
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      background: var(--accent-color);
-      color: #000;
-      border-radius: 4px;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    .show-details p {
-      font-size: 0.8rem;
-      color: #cbd5e1;
-      line-height: 1.3;
     }
 
     .hidden {
@@ -237,53 +289,73 @@
 </head>
 <body>
 
-  <!-- Top Navigation with Profile & Verification Status -->
+  <!-- Top Navigation -->
   <header>
     <div class="brand-title">StreamHub</div>
-    <div class="user-profile">
-      <span id="verificationBadge" class="status-badge badge-unverified">Unverified</span>
-      <div class="profile-avatar" id="userAvatar">U</div>
+
+    <div class="profile-container">
+      <button class="profile-button" id="profileBtn">
+        <span id="verificationBadge" class="status-badge badge-unverified">Unverified</span>
+        <div class="profile-avatar">U</div>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div id="profileDropdown" class="dropdown-menu hidden">
+        <button class="dropdown-item" id="openVerifyOption">Verify Age</button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item" onclick="alert('Account Settings')">Settings</button>
+      </div>
     </div>
   </header>
 
+  <!-- Main Catalog View -->
   <div class="main-container">
+    <h3 class="section-title">Explore Shows</h3>
+    <div id="showsContainer" class="shows-grid"></div>
+  </div>
 
-    <!-- Age Verification Prompt (Shows when Unverified) -->
-    <div id="verificationBanner" class="card verification-box">
-      <h2>Age Verification Required</h2>
-      <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 4px;">Verify your age to unlock tailored categories.</p>
+  <!-- Verification Overlay Modal -->
+  <div id="verificationModal" class="modal-overlay hidden">
+    <div class="modal-card">
 
-      <div class="camera-box">
-        <video id="video" autoplay playsinline muted></video>
-        <img id="previewImg" class="hidden" alt="Photo Preview">
-        <div class="guide-overlay"></div>
+      <!-- Step 1: Camera UI -->
+      <div id="cameraStep">
+        <h2>Age Verification</h2>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Center your face inside the circle.</p>
+
+        <div class="camera-box">
+          <video id="video" autoplay playsinline muted></video>
+          <img id="previewImg" class="hidden" alt="Photo Preview">
+          <div class="guide-overlay"></div>
+        </div>
+
+        <canvas id="canvas" style="display: none;"></canvas>
+
+        <button id="snapBtn" class="btn">Take Photo</button>
+        <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
+        <button id="submitBtn" class="btn hidden">Submit for Review</button>
+        <button id="cancelBtn" class="btn btn-secondary" style="margin-top: 8px;">Cancel</button>
+
+        <div id="status" class="status-msg">Starting camera...</div>
       </div>
 
-      <canvas id="canvas" style="display: none;"></canvas>
-
-      <button id="snapBtn" class="btn">Take Photo</button>
-      <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
-      <button id="submitBtn" class="btn hidden">Submit for Review</button>
-
-      <div id="status" class="status-msg">Starting camera...</div>
-    </div>
-
-    <!-- Review Loading State (Shows while Waiting for Admin) -->
-    <div id="loadingBanner" class="card verification-box hidden">
-      <h2>Reviewing Submission</h2>
-      <div class="spinner"></div>
-      <p>Your photo was sent to the admin.</p>
-      <p style="color: var(--accent-color); font-weight: bold; margin-top: 5px;">Waiting for age group assignment...</p>
-    </div>
-
-    <!-- Shows Catalog Area -->
-    <div>
-      <h3 class="section-title">Featured Catalog</h3>
-      <div id="showsContainer" class="shows-grid">
-        <!-- Shows loaded dynamically from shows.json -->
+      <!-- Step 2: Spinning Loading State -->
+      <div id="loadingStep" class="hidden">
+        <h2>Reviewing Submission</h2>
+        <div class="spinner"></div>
+        <p style="font-size: 0.9rem; color: #94a3b8;">Your photo was sent to the admin.</p>
+        <p style="color: var(--accent-color); font-weight: bold; margin-top: 8px;">Waiting for age group assignment...</p>
       </div>
-    </div>
 
+      <!-- Step 3: Assigned Result & Close Button -->
+      <div id="completedStep" class="hidden">
+        <h2>Verification Complete!</h2>
+        <p style="color: #94a3b8; margin-top: 8px;">Assigned Category:</p>
+        <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold; font-size: 1.2rem; margin: 10px 0;"></p>
+        <button id="closeModalBtn" class="btn">Close</button>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -292,6 +364,12 @@
     const userId = 'user_' + Math.random().toString(36).substr(2, 6);
     let conn = null;
     let photoData = null;
+    let cameraStream = null;
+
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const openVerifyOption = document.getElementById('openVerifyOption');
+    const verificationModal = document.getElementById('verificationModal');
 
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -299,9 +377,14 @@
     const snapBtn = document.getElementById('snapBtn');
     const retakeBtn = document.getElementById('retakeBtn');
     const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
     const statusDiv = document.getElementById('status');
 
-    // Default fallback shows including Preschooler titles
+    const cameraStep = document.getElementById('cameraStep');
+    const loadingStep = document.getElementById('loadingStep');
+    const completedStep = document.getElementById('completedStep');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
     const defaultShows = [
       { title: "Peppa Pig", rating: "Preschool", image: "https://images.unsplash.com/photo-1560703650-ef3e0f254ae0?w=400", description: "Fun adventures with Peppa and her family." },
       { title: "PAW Patrol", rating: "Preschool", image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400", description: "Heroic pups working together to protect the community." },
@@ -310,16 +393,47 @@
       { title: "Galactic Odyssey", rating: "18+", image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400", description: "An intense space exploration journey." }
     ];
 
-    async function initCamera() {
+    // Profile Dropdown Toggle
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      profileDropdown.classList.add('hidden');
+    });
+
+    // Modal Control
+    openVerifyOption.addEventListener('click', () => {
+      profileDropdown.classList.add('hidden');
+      verificationModal.classList.remove('hidden');
+      startCamera();
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+    closeModalBtn.addEventListener('click', closeModal);
+
+    function closeModal() {
+      verificationModal.classList.add('hidden');
+      stopCamera();
+    }
+
+    async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        cameraStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
         });
-        video.srcObject = stream;
+        video.srcObject = cameraStream;
         await video.play();
         statusDiv.textContent = "Position your face and tap 'Take Photo'.";
       } catch (err) {
-        statusDiv.textContent = "Camera access error: Run via Live Server (http://localhost) or HTTPS.";
+        statusDiv.textContent = "Camera access error. Use Live Server or HTTPS.";
+      }
+    }
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
       }
     }
 
@@ -338,7 +452,6 @@
         console.log('Using default show catalog fallback.');
       }
 
-      // Filter shows if age verification complete
       if (assignedRating) {
         showList = showList.filter(show => show.rating === assignedRating || show.rating === 'Preschool');
       }
@@ -391,15 +504,17 @@
 
       conn.on('open', () => {
         conn.send({ type: 'submit', userId: userId, photo: photoData });
-        document.getElementById('verificationBanner').classList.add('hidden');
-        document.getElementById('loadingBanner').classList.remove('hidden');
+        cameraStep.classList.add('hidden');
+        loadingStep.classList.remove('hidden');
       });
 
       conn.on('data', (data) => {
         if (data.type === 'approval') {
-          // Complete verification: Hide loading screen and update header status
-          document.getElementById('loadingBanner').classList.add('hidden');
-          
+          stopCamera();
+          loadingStep.classList.add('hidden');
+          completedStep.classList.remove('hidden');
+          document.getElementById('assignedGroupBanner').textContent = data.ageGroup;
+
           const badge = document.getElementById('verificationBadge');
           badge.textContent = data.ageGroup;
           badge.className = 'status-badge badge-verified';
@@ -414,7 +529,6 @@
     });
 
     window.addEventListener('load', () => {
-      initCamera();
       loadCatalog();
     });
   </script>
