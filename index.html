@@ -2,332 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Age Verification</title>
-
-  <!-- Firebase App & Realtime Database SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --accent-color: #38bdf8;
-      --text-color: #f8fafc;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 450px;
-      background: var(--card-bg);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      text-align: center;
-    }
-
-    h2 {
-      margin-top: 0;
-      font-size: 1.5rem;
-    }
-
-    .camera-box {
-      position: relative;
-      width: 280px;
-      height: 280px;
-      margin: 20px auto;
-      border-radius: 50%;
-      overflow: hidden;
-      border: 4px solid var(--accent-color);
-      background-color: #000;
-    }
-
-    @media (max-width: 480px) {
-      .camera-box {
-        width: 70vw;
-        height: 70vw;
-      }
-    }
-
-    video, canvas, #previewImg {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .guide-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      box-shadow: inset 0 0 0 15px rgba(0, 0, 0, 0.35);
-      pointer-events: none;
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .btn {
-      background-color: var(--accent-color);
-      color: #000;
-      border: none;
-      padding: 14px;
-      font-size: 1rem;
-      font-weight: bold;
-      border-radius: 12px;
-      cursor: pointer;
-      width: 100%;
-      touch-action: manipulation;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn-secondary {
-      background-color: #64748b;
-      color: #fff;
-    }
-
-    .status-msg {
-      margin-top: 15px;
-      font-size: 0.95rem;
-      color: #94a3b8;
-    }
-
-    .catalog {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
-      margin-top: 20px;
-      text-align: left;
-    }
-
-    .show-card {
-      background: #334155;
-      padding: 12px;
-      border-radius: 10px;
-    }
-
-    .show-card h4 {
-      margin: 0 0 6px 0;
-      color: var(--accent-color);
-      font-size: 1rem;
-    }
-
-    .show-card p {
-      font-size: 0.8rem;
-      margin: 0;
-      color: #cbd5e1;
-    }
-
-    .hidden {
-      display: none !important;
-    }
+    body { font-family: sans-serif; background: #0f172a; color: #fff; padding: 20px; text-align: center; }
+    .box { max-width: 400px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 16px; }
+    .camera-box { width: 220px; height: 220px; border-radius: 50%; overflow: hidden; margin: 15px auto; border: 3px solid #38bdf8; background: #000; }
+    video, img { width: 100%; height: 100%; object-fit: cover; }
+    input { padding: 10px; border-radius: 6px; border: none; width: 80%; margin-bottom: 10px; text-align: center; }
+    .btn { background: #38bdf8; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
-
-  <!-- Verification Section -->
-  <div id="verificationSection" class="container">
+  <div class="box" id="verifyBox">
     <h2>Age Verification</h2>
-    <p style="font-size: 0.9rem; color: #cbd5e1;">Center your face inside the circle and take a photo.</p>
-
+    <input type="text" id="adminCodeInput" placeholder="Enter Admin Code here">
+    
     <div class="camera-box">
       <video id="video" autoplay playsinline muted></video>
-      <img id="previewImg" class="hidden" alt="Captured photo preview">
-      <div class="guide-overlay"></div>
+      <img id="preview" class="hidden">
     </div>
+    <canvas id="canvas" style="display:none;"></canvas>
 
-    <canvas id="canvas" style="display: none;"></canvas>
-
-    <div class="controls">
-      <button id="snapBtn" class="btn">Take Photo</button>
-      <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
-      <button id="submitBtn" class="btn hidden">Submit for Review</button>
-    </div>
-
-    <div id="status" class="status-msg">Starting camera...</div>
+    <button id="snapBtn" class="btn">Take Photo</button>
+    <button id="submitBtn" class="btn hidden">Submit to Admin</button>
+    <p id="status"></p>
   </div>
 
-  <!-- Shows Catalog Section -->
-  <div id="contentSection" class="container hidden">
-    <h2>Your Shows Catalog</h2>
-    <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold;"></p>
-    <div id="showsCatalog" class="catalog"></div>
+  <div class="box hidden" id="catalogBox">
+    <h2>Catalog Unlocked</h2>
+    <p id="groupResult" style="color: #38bdf8; font-weight: bold;"></p>
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBr5P6mND6gYJPsG2GHP3RKtokIuUGjJqE",
-      authDomain: "ageverification-e451c.firebaseapp.com",
-      databaseURL: "https://ageverification-e451c-default-rtdb.firebaseio.com",
-      projectId: "ageverification-e451c",
-      storageBucket: "ageverification-e451c.firebasestorage.app",
-      messagingSenderId: "501354082724",
-      appId: "1:501354082724:web:32147ae1df6cd373d29131"
-    };
-
-    // Initialize Firebase Realtime Database
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database(firebaseConfig.databaseURL);
+    const peer = new Peer();
+    const userId = 'user_' + Math.random().toString(36).substr(2, 6);
+    let conn = null;
+    let photoData = null;
 
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const previewImg = document.getElementById('previewImg');
-    const snapBtn = document.getElementById('snapBtn');
-    const retakeBtn = document.getElementById('retakeBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusDiv = document.getElementById('status');
-    const verificationSection = document.getElementById('verificationSection');
-    const contentSection = document.getElementById('contentSection');
+    const preview = document.getElementById('preview');
+    const status = document.getElementById('status');
 
-    let currentImageData = null;
-    let userId = localStorage.getItem('user_device_id') || 'user_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('user_device_id', userId);
-
-    // Initialise camera with fallback constraints and explicit playback call
-    async function initCamera() {
+    async function startCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         await video.play();
-        statusDiv.textContent = "Position your face and tap 'Take Photo'.";
       } catch (err) {
-        try {
-          const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          video.srcObject = basicStream;
-          await video.play();
-          statusDiv.textContent = "Position your face and tap 'Take Photo'.";
-        } catch (fallbackErr) {
-          statusDiv.textContent = "Camera error: Open this file via Live Server or HTTPS to allow camera access.";
-        }
+        status.textContent = "Camera error. Use Live Server or HTTPS.";
       }
     }
 
-    snapBtn.addEventListener('click', () => {
-      canvas.width = 300;
-      canvas.height = 300;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, 300, 300);
+    document.getElementById('snapBtn').addEventListener('click', () => {
+      const canvas = document.getElementById('canvas');
+      canvas.width = 250;
+      canvas.height = 250;
+      canvas.getContext('2d').drawImage(video, 0, 0, 250, 250);
+      photoData = canvas.toDataURL('image/jpeg', 0.6);
 
-      currentImageData = canvas.toDataURL('image/jpeg', 0.6);
-      previewImg.src = currentImageData;
-
+      preview.src = photoData;
       video.classList.add('hidden');
-      previewImg.classList.remove('hidden');
-
-      snapBtn.classList.add('hidden');
-      retakeBtn.classList.remove('hidden');
-      submitBtn.classList.remove('hidden');
-      statusDiv.textContent = "Review your photo before submitting.";
+      preview.classList.remove('hidden');
+      document.getElementById('snapBtn').classList.add('hidden');
+      document.getElementById('submitBtn').classList.remove('hidden');
     });
 
-    retakeBtn.addEventListener('click', () => {
-      previewImg.classList.add('hidden');
-      video.classList.remove('hidden');
-
-      snapBtn.classList.remove('hidden');
-      retakeBtn.classList.add('hidden');
-      submitBtn.classList.add('hidden');
-      statusDiv.textContent = "Position your face and tap 'Take Photo'.";
-    });
-
-    submitBtn.addEventListener('click', () => {
-      submitBtn.classList.add('hidden');
-      retakeBtn.classList.add('hidden');
-      statusDiv.textContent = "Sending to admin on another device...";
-
-      db.ref('submissions/' + userId).set({
-        id: userId,
-        photo: currentImageData,
-        timestamp: new Date().toLocaleTimeString(),
-        status: 'pending'
-      }).then(() => {
-        statusDiv.textContent = "Submitted! Waiting for admin review...";
-        listenForApproval();
-      }).catch(err => {
-        statusDiv.textContent = "Error submitting photo: " + err.message;
-      });
-    });
-
-    function listenForApproval() {
-      db.ref('approvals/' + userId).on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.ageGroup) {
-          loadShowsCatalog(data.ageGroup);
-        }
-      });
-    }
-
-    async function loadShowsCatalog(ageGroup) {
-      verificationSection.classList.add('hidden');
-      contentSection.classList.remove('hidden');
-      document.getElementById('assignedGroupBanner').textContent = `Assigned Rating: ${ageGroup}`;
-
-      try {
-        const response = await fetch('shows.json');
-        const data = await response.json();
-        const catalogContainer = document.getElementById('showsCatalog');
-        catalogContainer.innerHTML = '';
-
-        const filteredShows = data.shows.filter(show => show.rating === ageGroup || show.rating === 'All Ages');
-
-        if (filteredShows.length === 0) {
-          catalogContainer.innerHTML = '<p>No shows available for this category.</p>';
-          return;
-        }
-
-        filteredShows.forEach(show => {
-          const card = document.createElement('div');
-          card.className = 'show-card';
-          card.innerHTML = `
-            <h4>${show.title}</h4>
-            <p><strong>Rating:</strong> ${show.rating}</p>
-            <p>${show.description}</p>
-          `;
-          catalogContainer.appendChild(card);
-        });
-      } catch (e) {
-        console.error('Failed to load shows.json', e);
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      const adminCode = document.getElementById('adminCodeInput').value.trim();
+      if (!adminCode) {
+        alert("Please enter the Admin Code first!");
+        return;
       }
-    }
 
-    window.addEventListener('load', () => {
-      db.ref('approvals/' + userId).once('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.ageGroup) {
-          loadShowsCatalog(data.ageGroup);
-        } else {
-          initCamera();
+      status.textContent = "Connecting to admin...";
+      conn = peer.connect(adminCode);
+
+      conn.on('open', () => {
+        conn.send({ type: 'submit', userId: userId, photo: photoData });
+        status.textContent = "Submitted! Waiting for approval...";
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'approval') {
+          document.getElementById('verifyBox').classList.add('hidden');
+          document.getElementById('catalogBox').classList.remove('hidden');
+          document.getElementById('groupResult').textContent = "Rating: " + data.ageGroup;
         }
       });
     });
+
+    startCamera();
   </script>
 </body>
 </html>
