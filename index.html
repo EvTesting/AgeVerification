@@ -2,38 +2,157 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Age Verification</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
   <style>
-    body { font-family: sans-serif; background: #0f172a; color: #fff; padding: 20px; text-align: center; }
-    .box { max-width: 400px; margin: 0 auto; background: #1e293b; padding: 20px; border-radius: 16px; }
-    .camera-box { width: 220px; height: 220px; border-radius: 50%; overflow: hidden; margin: 15px auto; border: 3px solid #38bdf8; background: #000; }
-    video, img { width: 100%; height: 100%; object-fit: cover; }
-    input { padding: 10px; border-radius: 6px; border: none; width: 80%; margin-bottom: 10px; text-align: center; }
-    .btn { background: #38bdf8; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 8px; }
-    .hidden { display: none; }
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #38bdf8;
+      --text-color: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      font-size: 1.5rem;
+    }
+
+    p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+      font-size: 1rem;
+      text-align: center;
+      margin-bottom: 15px;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent-color);
+    }
+
+    .camera-box {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      margin: 0 auto 20px auto;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 4px solid var(--accent-color);
+      background-color: #000;
+    }
+
+    video, #previewImg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .guide-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 12px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+    }
+
+    .btn {
+      background-color: var(--accent-color);
+      color: #000;
+      border: none;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-secondary {
+      background-color: #64748b;
+      color: #fff;
+    }
+
+    .status-msg {
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
-  <div class="box" id="verifyBox">
+
+  <div id="verificationSection" class="container">
     <h2>Age Verification</h2>
-    <input type="text" id="adminCodeInput" placeholder="Enter Admin Code here">
-    
+    <p>Enter the Admin Code, position your face, and take a photo.</p>
+
+    <input type="text" id="adminCodeInput" placeholder="Paste Admin Code Here">
+
     <div class="camera-box">
       <video id="video" autoplay playsinline muted></video>
-      <img id="preview" class="hidden">
+      <img id="previewImg" class="hidden" alt="Photo Preview">
+      <div class="guide-overlay"></div>
     </div>
-    <canvas id="canvas" style="display:none;"></canvas>
+
+    <canvas id="canvas" style="display: none;"></canvas>
 
     <button id="snapBtn" class="btn">Take Photo</button>
-    <button id="submitBtn" class="btn hidden">Submit to Admin</button>
-    <p id="status"></p>
+    <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
+    <button id="submitBtn" class="btn hidden">Submit for Review</button>
+
+    <div id="status" class="status-msg">Starting camera...</div>
   </div>
 
-  <div class="box hidden" id="catalogBox">
-    <h2>Catalog Unlocked</h2>
-    <p id="groupResult" style="color: #38bdf8; font-weight: bold;"></p>
+  <div id="contentSection" class="container hidden">
+    <h2>Verification Complete</h2>
+    <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold; font-size: 1.2rem;"></p>
   </div>
 
   <script>
@@ -43,58 +162,81 @@
     let photoData = null;
 
     const video = document.getElementById('video');
-    const preview = document.getElementById('preview');
-    const status = document.getElementById('status');
+    const canvas = document.getElementById('canvas');
+    const previewImg = document.getElementById('previewImg');
+    const snapBtn = document.getElementById('snapBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const statusDiv = document.getElementById('status');
 
-    async function startCamera() {
+    async function initCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+        });
         video.srcObject = stream;
         await video.play();
+        statusDiv.textContent = "Camera ready. Enter Admin Code and take a photo.";
       } catch (err) {
-        status.textContent = "Camera error. Use Live Server or HTTPS.";
+        statusDiv.textContent = "Camera blocked: Run using Live Server (http://localhost) or HTTPS.";
       }
     }
 
-    document.getElementById('snapBtn').addEventListener('click', () => {
-      const canvas = document.getElementById('canvas');
-      canvas.width = 250;
-      canvas.height = 250;
-      canvas.getContext('2d').drawImage(video, 0, 0, 250, 250);
-      photoData = canvas.toDataURL('image/jpeg', 0.6);
+    snapBtn.addEventListener('click', () => {
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, 300, 300);
 
-      preview.src = photoData;
+      photoData = canvas.toDataURL('image/jpeg', 0.7);
+      previewImg.src = photoData;
+
       video.classList.add('hidden');
-      preview.classList.remove('hidden');
-      document.getElementById('snapBtn').classList.add('hidden');
-      document.getElementById('submitBtn').classList.remove('hidden');
+      previewImg.classList.remove('hidden');
+
+      snapBtn.classList.add('hidden');
+      retakeBtn.classList.remove('hidden');
+      submitBtn.classList.remove('hidden');
+      statusDiv.textContent = "Review photo before submitting.";
     });
 
-    document.getElementById('submitBtn').addEventListener('click', () => {
+    retakeBtn.addEventListener('click', () => {
+      previewImg.classList.add('hidden');
+      video.classList.remove('hidden');
+
+      snapBtn.classList.remove('hidden');
+      retakeBtn.classList.add('hidden');
+      submitBtn.classList.add('hidden');
+      statusDiv.textContent = "Position your face and tap 'Take Photo'.";
+    });
+
+    submitBtn.addEventListener('click', () => {
       const adminCode = document.getElementById('adminCodeInput').value.trim();
       if (!adminCode) {
-        alert("Please enter the Admin Code first!");
+        alert("Please enter the Admin Code shown on admin.html");
         return;
       }
 
-      status.textContent = "Connecting to admin...";
+      statusDiv.textContent = "Connecting to admin...";
       conn = peer.connect(adminCode);
 
       conn.on('open', () => {
         conn.send({ type: 'submit', userId: userId, photo: photoData });
-        status.textContent = "Submitted! Waiting for approval...";
+        statusDiv.textContent = "Submitted! Waiting for admin review...";
+        submitBtn.classList.add('hidden');
+        retakeBtn.classList.add('hidden');
       });
 
       conn.on('data', (data) => {
         if (data.type === 'approval') {
-          document.getElementById('verifyBox').classList.add('hidden');
-          document.getElementById('catalogBox').classList.remove('hidden');
-          document.getElementById('groupResult').textContent = "Rating: " + data.ageGroup;
+          document.getElementById('verificationSection').classList.add('hidden');
+          document.getElementById('contentSection').classList.remove('hidden');
+          document.getElementById('assignedGroupBanner').textContent = "Assigned Category: " + data.ageGroup;
         }
       });
     });
 
-    startCamera();
+    window.addEventListener('load', initCamera);
   </script>
 </body>
 </html>
