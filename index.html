@@ -302,6 +302,7 @@
       <!-- Dropdown Menu -->
       <div id="profileDropdown" class="dropdown-menu hidden">
         <button class="dropdown-item" id="openVerifyOption">Verify Age</button>
+        <button class="dropdown-item hidden" id="reverifyOption">Re-verify Age</button>
         <div class="dropdown-divider"></div>
         <button class="dropdown-item" onclick="alert('Account Settings')">Settings</button>
       </div>
@@ -320,7 +321,7 @@
 
       <!-- Step 1: Camera UI -->
       <div id="cameraStep">
-        <h2>Age Verification</h2>
+        <h2 id="modalTitle">Age Verification</h2>
         <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 4px;">Center your face inside the circle.</p>
 
         <div class="camera-box">
@@ -355,14 +356,6 @@
         <button id="closeModalBtn" class="btn">Close</button>
       </div>
 
-      <!-- Step 4: Locked Notice -->
-      <div id="lockedStep" class="hidden">
-        <h2>Verification Locked</h2>
-        <p style="color: #cbd5e1; margin: 15px 0;">Your age group is locked into your profile.</p>
-        <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px;">Only the Admin Dashboard can reset your verification status.</p>
-        <button id="closeLockedBtn" class="btn btn-secondary">Close</button>
-      </div>
-
     </div>
   </div>
 
@@ -385,7 +378,9 @@
     const profileBtn = document.getElementById('profileBtn');
     const profileDropdown = document.getElementById('profileDropdown');
     const openVerifyOption = document.getElementById('openVerifyOption');
+    const reverifyOption = document.getElementById('reverifyOption');
     const verificationModal = document.getElementById('verificationModal');
+    const modalTitle = document.getElementById('modalTitle');
 
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -399,9 +394,7 @@
     const cameraStep = document.getElementById('cameraStep');
     const loadingStep = document.getElementById('loadingStep');
     const completedStep = document.getElementById('completedStep');
-    const lockedStep = document.getElementById('lockedStep');
     const closeModalBtn = document.getElementById('closeModalBtn');
-    const closeLockedBtn = document.getElementById('closeLockedBtn');
 
     const defaultShows = [
       { title: "Peppa Pig", rating: "Preschool", image: "https://images.unsplash.com/photo-1560703650-ef3e0f254ae0?w=400", description: "Fun adventures with Peppa and her family." },
@@ -425,7 +418,11 @@
       const badge = document.getElementById('verificationBadge');
       badge.textContent = ageGroup;
       badge.className = 'status-badge badge-verified';
-      openVerifyOption.textContent = "Age Status (Locked)";
+      
+      // Toggle dropdown options to show Re-verify option
+      openVerifyOption.classList.add('hidden');
+      reverifyOption.classList.remove('hidden');
+
       loadCatalog(ageGroup);
     }
 
@@ -439,28 +436,31 @@
       profileDropdown.classList.add('hidden');
     });
 
-    // Modal Control
-    openVerifyOption.addEventListener('click', () => {
+    function openModalUI(isReverification = false) {
       profileDropdown.classList.add('hidden');
       verificationModal.classList.remove('hidden');
 
-      const savedGroup = localStorage.getItem('streamhub_assigned_group');
-      if (savedGroup) {
-        // Hide steps and show locked view
-        cameraStep.classList.add('hidden');
-        loadingStep.classList.add('hidden');
-        completedStep.classList.add('hidden');
-        lockedStep.classList.remove('hidden');
-      } else {
-        cameraStep.classList.remove('hidden');
-        lockedStep.classList.add('hidden');
-        startCamera();
-      }
-    });
+      modalTitle.textContent = isReverification ? "Re-verify Age" : "Age Verification";
+
+      // Reset camera view step
+      cameraStep.classList.remove('hidden');
+      loadingStep.classList.add('hidden');
+      completedStep.classList.add('hidden');
+
+      previewImg.classList.add('hidden');
+      video.classList.remove('hidden');
+      snapBtn.classList.remove('hidden');
+      retakeBtn.classList.add('hidden');
+      submitBtn.classList.add('hidden');
+
+      startCamera();
+    }
+
+    openVerifyOption.addEventListener('click', () => openModalUI(false));
+    reverifyOption.addEventListener('click', () => openModalUI(true));
 
     cancelBtn.addEventListener('click', closeModal);
     closeModalBtn.addEventListener('click', closeModal);
-    closeLockedBtn.addEventListener('click', closeModal);
 
     function closeModal() {
       verificationModal.classList.add('hidden');
@@ -561,7 +561,7 @@
         if (data.type === 'approval') {
           stopCamera();
           
-          // Save to LocalStorage permanently
+          // Save updated selection to LocalStorage
           localStorage.setItem('streamhub_assigned_group', data.ageGroup);
 
           loadingStep.classList.add('hidden');
@@ -569,25 +569,11 @@
           document.getElementById('assignedGroupBanner').textContent = data.ageGroup;
 
           updateVerifiedUI(data.ageGroup);
-        } else if (data.type === 'reset') {
-          // Admin clear action
-          localStorage.removeItem('streamhub_assigned_group');
-          location.reload();
         }
       });
 
       peer.on('error', () => {
         statusDiv.textContent = "Could not connect to Admin. Open admin.html in another tab or device.";
-      });
-    });
-
-    // Auto reconnect to receive reset signals from Admin
-    peer.on('connection', (incomingConn) => {
-      incomingConn.on('data', (data) => {
-        if (data.type === 'reset') {
-          localStorage.removeItem('streamhub_assigned_group');
-          location.reload();
-        }
       });
     });
 
