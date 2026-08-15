@@ -48,20 +48,6 @@
       font-size: 1.5rem;
     }
 
-    /* Scalable circular camera preview for mobile screens */
-    .camera-box {
-      position: relative;
-      width: 70vw;
-      height: 70vw;
-      max-width: 280px;
-      max-height: 280px;
-      margin: 20px auto;
-      border-radius: 50%;
-      overflow: hidden;
-      border: 4px solid var(--accent-color);
-      background-color: #000;
-    }
-    /* Flexible circular camera viewport for laptops, desktops, and mobile devices */
     .camera-box {
       position: relative;
       width: 280px;
@@ -73,12 +59,12 @@
       background-color: #000;
     }
 
-@media (max-width: 480px) {
-  .camera-box {
-    width: 70vw;
-    height: 70vw;
-  }
-}
+    @media (max-width: 480px) {
+      .camera-box {
+        width: 70vw;
+        height: 70vw;
+      }
+    }
 
     video, canvas, #previewImg {
       width: 100%;
@@ -195,7 +181,6 @@
   </div>
 
   <script>
-    // 1. Paste your Firebase project credentials here
     const firebaseConfig = {
       apiKey: "AIzaSyBr5P6mND6gYJPsG2GHP3RKtokIuUGjJqE",
       authDomain: "ageverification-e451c.firebaseapp.com",
@@ -206,7 +191,6 @@
       appId: "1:501354082724:web:32147ae1df6cd373d29131"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -224,16 +208,22 @@
     let userId = localStorage.getItem('user_device_id') || 'user_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('user_device_id', userId);
 
-    // Initialize Front Camera (optimized for mobile)
+    // Flexible camera initialization with fallback for laptops and phones
     async function initCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 400 }, height: { ideal: 400 } }
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
         });
         video.srcObject = stream;
         statusDiv.textContent = "Position your face and tap 'Take Photo'.";
       } catch (err) {
-        statusDiv.textContent = "Camera access denied or unavailable.";
+        try {
+          const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = basicStream;
+          statusDiv.textContent = "Position your face and tap 'Take Photo'.";
+        } catch (fallbackErr) {
+          statusDiv.textContent = "Camera error: Please enable camera permissions and use HTTPS or http://localhost.";
+        }
       }
     }
 
@@ -243,7 +233,7 @@
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, 300, 300);
 
-      currentImageData = canvas.toDataURL('image/jpeg', 0.6); // Compress photo for fast transfer
+      currentImageData = canvas.toDataURL('image/jpeg', 0.6);
       previewImg.src = currentImageData;
 
       video.classList.add('hidden');
@@ -265,7 +255,6 @@
       statusDiv.textContent = "Position your face and tap 'Take Photo'.";
     });
 
-    // Send photo across devices using Firebase
     submitBtn.addEventListener('click', () => {
       submitBtn.classList.add('hidden');
       retakeBtn.classList.add('hidden');
@@ -284,7 +273,6 @@
       });
     });
 
-    // Listen in real-time for admin approval from any device
     function listenForApproval() {
       db.ref('approvals/' + userId).on('value', (snapshot) => {
         const data = snapshot.val();
@@ -327,7 +315,6 @@
       }
     }
 
-    // Check if already approved on app startup
     window.addEventListener('load', () => {
       db.ref('approvals/' + userId).once('value', (snapshot) => {
         const data = snapshot.val();
