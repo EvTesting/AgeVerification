@@ -52,23 +52,6 @@
       margin-bottom: 15px;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #fff;
-      font-size: 1rem;
-      text-align: center;
-      margin-bottom: 15px;
-      outline: none;
-    }
-
-    input[type="text"]:focus {
-      border-color: var(--accent-color);
-    }
-
     .camera-box {
       position: relative;
       width: 260px;
@@ -122,6 +105,22 @@
       color: #cbd5e1;
     }
 
+    /* Spinning Loading Indicator */
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #334155;
+      border-top: 5px solid var(--accent-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     .hidden {
       display: none !important;
     }
@@ -129,11 +128,10 @@
 </head>
 <body>
 
+  <!-- Verification UI -->
   <div id="verificationSection" class="container">
     <h2>Age Verification</h2>
-    <p>Enter the Admin Code, position your face, and take a photo.</p>
-
-    <input type="text" id="adminCodeInput" placeholder="Paste Admin Code Here">
+    <p>Center your face in the circle and tap 'Take Photo'.</p>
 
     <div class="camera-box">
       <video id="video" autoplay playsinline muted></video>
@@ -145,17 +143,29 @@
 
     <button id="snapBtn" class="btn">Take Photo</button>
     <button id="retakeBtn" class="btn btn-secondary hidden">Retake</button>
-    <button id="submitBtn" class="btn hidden">Submit for Review</button>
+    <button id="submitBtn" class="btn hidden">Submit Automatically</button>
 
     <div id="status" class="status-msg">Starting camera...</div>
   </div>
 
+  <!-- Loading State Section -->
+  <div id="loadingSection" class="container hidden">
+    <h2>Review in Progress</h2>
+    <div class="spinner"></div>
+    <p>Your photo has been sent to the admin.</p>
+    <p style="color: var(--accent-color); font-weight: bold;">Please wait while your age group is assigned...</p>
+  </div>
+
+  <!-- Unlocked Content Section -->
   <div id="contentSection" class="container hidden">
-    <h2>Verification Complete</h2>
-    <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold; font-size: 1.2rem;"></p>
+    <h2>Verification Complete!</h2>
+    <p style="color: #94a3b8;">Your access profile:</p>
+    <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold; font-size: 1.3rem; margin-top: 10px;"></p>
   </div>
 
   <script>
+    // Shared fixed Peer ID to automatically find admin
+    const ADMIN_PEER_ID = 'auto-admin-hub-2026';
     const peer = new Peer();
     const userId = 'user_' + Math.random().toString(36).substr(2, 6);
     let conn = null;
@@ -176,9 +186,9 @@
         });
         video.srcObject = stream;
         await video.play();
-        statusDiv.textContent = "Camera ready. Enter Admin Code and take a photo.";
+        statusDiv.textContent = "Camera ready. Position your face and take a photo.";
       } catch (err) {
-        statusDiv.textContent = "Camera blocked: Run using Live Server (http://localhost) or HTTPS.";
+        statusDiv.textContent = "Camera access blocked. Run via Live Server (http://localhost) or HTTPS.";
       }
     }
 
@@ -211,28 +221,30 @@
     });
 
     submitBtn.addEventListener('click', () => {
-      const adminCode = document.getElementById('adminCodeInput').value.trim();
-      if (!adminCode) {
-        alert("Please enter the Admin Code shown on admin.html");
-        return;
-      }
-
-      statusDiv.textContent = "Connecting to admin...";
-      conn = peer.connect(adminCode);
+      statusDiv.textContent = "Connecting to admin dashboard...";
+      
+      // Auto connect directly to Admin Hub
+      conn = peer.connect(ADMIN_PEER_ID);
 
       conn.on('open', () => {
         conn.send({ type: 'submit', userId: userId, photo: photoData });
-        statusDiv.textContent = "Submitted! Waiting for admin review...";
-        submitBtn.classList.add('hidden');
-        retakeBtn.classList.add('hidden');
+        
+        // Hide camera UI and show spinning loading circle
+        document.getElementById('verificationSection').classList.add('hidden');
+        document.getElementById('loadingSection').classList.remove('hidden');
       });
 
       conn.on('data', (data) => {
         if (data.type === 'approval') {
-          document.getElementById('verificationSection').classList.add('hidden');
+          // Hide spinning circle and show final assigned category
+          document.getElementById('loadingSection').classList.add('hidden');
           document.getElementById('contentSection').classList.remove('hidden');
-          document.getElementById('assignedGroupBanner').textContent = "Assigned Category: " + data.ageGroup;
+          document.getElementById('assignedGroupBanner').textContent = data.ageGroup;
         }
+      });
+
+      peer.on('error', () => {
+        statusDiv.textContent = "Could not reach Admin. Ensure admin.html is opened first on another tab/device.";
       });
     });
 
