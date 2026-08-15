@@ -84,14 +84,13 @@
 <body>
 
   <h1>Admin Review Dashboard</h1>
-  <p style="color: #94a3b8; font-size: 0.9rem;">Live requests from any mobile device will appear here.</p>
+  <p style="color: #94a3b8; font-size: 0.9rem;">Live requests from any device will appear here.</p>
 
   <div id="requestsList" class="requests-list">
     <p class="empty-msg">Waiting for submissions...</p>
   </div>
 
   <script>
-    // 1. Paste the SAME Firebase credentials here
     const firebaseConfig = {
       apiKey: "AIzaSyBr5P6mND6gYJPsG2GHP3RKtokIuUGjJqE",
       authDomain: "ageverification-e451c.firebaseapp.com",
@@ -107,7 +106,6 @@
 
     const requestsList = document.getElementById('requestsList');
 
-    // Listen for real-time submissions from any device
     db.ref('submissions').on('value', (snapshot) => {
       requestsList.innerHTML = '';
       const data = snapshot.val();
@@ -139,10 +137,7 @@
     }
 
     function assignAgeGroup(userId, ageGroup) {
-      // 1. Send approval status to user's phone
       db.ref('approvals/' + userId).set({ ageGroup });
-
-      // 2. Clear request from pending queue
       db.ref('submissions/' + userId).remove();
     }
   </script>
