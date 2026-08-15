@@ -1,1 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Verification Panel</title>
 
+  <!-- Firebase App & Realtime Database SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 16px;
+    }
+
+    h1 {
+      color: #38bdf8;
+      font-size: 1.5rem;
+      margin-top: 0;
+    }
+
+    .requests-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .card img {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #38bdf8;
+      margin-bottom: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #fff;
+      font-size: 0.95rem;
+      touch-action: manipulation;
+    }
+
+    .btn-child { background-color: #22c55e; }
+    .btn-teen { background-color: #f59e0b; }
+    .btn-adult { background-color: #ef4444; }
+
+    .empty-msg {
+      color: #94a3b8;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Admin Review Dashboard</h1>
+  <p style="color: #94a3b8; font-size: 0.9rem;">Live requests from any mobile device will appear here.</p>
+
+  <div id="requestsList" class="requests-list">
+    <p class="empty-msg">Waiting for submissions...</p>
+  </div>
+
+  <script>
+    // 1. Paste the SAME Firebase credentials here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const requestsList = document.getElementById('requestsList');
+
+    // Listen for real-time submissions from any device
+    db.ref('submissions').on('value', (snapshot) => {
+      requestsList.innerHTML = '';
+      const data = snapshot.val();
+
+      if (!data) {
+        requestsList.innerHTML = '<p class="empty-msg">No pending requests right now.</p>';
+        return;
+      }
+
+      Object.values(data).forEach(item => {
+        createCard(item);
+      });
+    });
+
+    function createCard(item) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="${item.photo}" alt="User Photo">
+        <p><strong>ID:</strong> ${item.id}</p>
+        <p><strong>Time:</strong> ${item.timestamp}</p>
+        <div class="btn-group">
+          <button class="btn btn-child" onclick="assignAgeGroup('${item.id}', 'Under 13')">Assign: Under 13</button>
+          <button class="btn btn-teen" onclick="assignAgeGroup('${item.id}', '13-17')">Assign: 13-17</button>
+          <button class="btn btn-adult" onclick="assignAgeGroup('${item.id}', '18+')">Assign: 18+</button>
+        </div>
+      `;
+      requestsList.appendChild(card);
+    }
+
+    function assignAgeGroup(userId, ageGroup) {
+      // 1. Send approval status to user's phone
+      db.ref('approvals/' + userId).set({ ageGroup });
+
+      // 2. Clear request from pending queue
+      db.ref('submissions/' + userId).remove();
+    }
+  </script>
+</body>
+</html>
