@@ -151,7 +151,7 @@
 </head>
 <body>
 
-  <!-- Verification UI -->
+  <!-- Verification Section -->
   <div id="verificationSection" class="container">
     <h2>Age Verification</h2>
     <p style="font-size: 0.9rem; color: #cbd5e1;">Center your face inside the circle and take a photo.</p>
@@ -173,7 +173,7 @@
     <div id="status" class="status-msg">Starting camera...</div>
   </div>
 
-  <!-- Shows Catalog UI -->
+  <!-- Shows Catalog Section -->
   <div id="contentSection" class="container hidden">
     <h2>Your Shows Catalog</h2>
     <p id="assignedGroupBanner" style="color: var(--accent-color); font-weight: bold;"></p>
@@ -191,8 +191,9 @@
       appId: "1:501354082724:web:32147ae1df6cd373d29131"
     };
 
+    // Initialize Firebase Realtime Database
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db = firebase.database(firebaseConfig.databaseURL);
 
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
@@ -208,21 +209,23 @@
     let userId = localStorage.getItem('user_device_id') || 'user_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('user_device_id', userId);
 
-    // Flexible camera initialization with fallback for laptops and phones
+    // Initialise camera with fallback constraints and explicit playback call
     async function initCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
         });
         video.srcObject = stream;
+        await video.play();
         statusDiv.textContent = "Position your face and tap 'Take Photo'.";
       } catch (err) {
         try {
           const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
           video.srcObject = basicStream;
+          await video.play();
           statusDiv.textContent = "Position your face and tap 'Take Photo'.";
         } catch (fallbackErr) {
-          statusDiv.textContent = "Camera error: Please enable camera permissions and use HTTPS or http://localhost.";
+          statusDiv.textContent = "Camera error: Open this file via Live Server or HTTPS to allow camera access.";
         }
       }
     }
@@ -269,7 +272,7 @@
         statusDiv.textContent = "Submitted! Waiting for admin review...";
         listenForApproval();
       }).catch(err => {
-        statusDiv.textContent = "Error submitting photo. Check internet connection.";
+        statusDiv.textContent = "Error submitting photo: " + err.message;
       });
     });
 
