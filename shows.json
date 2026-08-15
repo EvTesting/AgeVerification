@@ -1,28 +1,34 @@
 {
   "shows": [
     {
-      "id": 1,
-      "title": "Cartoon Adventures",
-      "rating": "Under 13",
-      "description": "Fun and colorful animated journeys for young audiences."
+      "title": "Peppa Pig",
+      "rating": "Preschool",
+      "image": "https://images.unsplash.com/photo-1560703650-ef3e0f254ae0?w=400",
+      "description": "Fun adventures with Peppa and her family."
     },
     {
-      "id": 2,
-      "title": "High School Mysteries",
+      "title": "PAW Patrol",
+      "rating": "Preschool",
+      "image": "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400",
+      "description": "Heroic pups working together to protect the community."
+    },
+    {
+      "title": "Sesame Street",
+      "rating": "Preschool",
+      "image": "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=400",
+      "description": "Learning numbers, letters, and friendship with Elmo."
+    },
+    {
+      "title": "Cyber Champions",
       "rating": "13-17",
-      "description": "A group of teenagers solve supernatural mysteries."
+      "image": "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400",
+      "description": "Teenagers competing in futuristic arena games."
     },
     {
-      "id": 3,
-      "title": "Late Night Thrillers",
+      "title": "Galactic Odyssey",
       "rating": "18+",
-      "description": "Intense suspense and complex plotlines for mature viewers."
-    },
-    {
-      "id": 4,
-      "title": "Nature Documentary",
-      "rating": "All Ages",
-      "description": "Explore wildlife around the world."
+      "image": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400",
+      "description": "An intense space exploration journey."
     }
   ]
 }
